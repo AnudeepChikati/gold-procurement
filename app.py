@@ -1,82 +1,108 @@
-"""
-Gold Procurement – Web UI (Flask)
+﻿"""
+Gold Procurement - Web UI (Flask)
 ===================================
-Provides a browser-based interface to upload the monthly Oracle TXT report
-and download a formatted Excel file.
-
-Run:
-    python app.py
-Then open http://localhost:5000 in your browser.
+Environment variables (required in production):
+    APP_USERNAME   - login username  (default: admin)
+    APP_PASSWORD   - login password  (default: titan@123)
+    SECRET_KEY     - Flask session secret (generate a long random string)
 """
 
 import os
 import uuid
 import tempfile
 import traceback
+import functools
 from pathlib import Path
 
 from flask import (
-    Flask, request, jsonify, send_file, render_template, abort
+    Flask, request, jsonify, send_file, render_template,
+    abort, session, redirect, url_for
 )
 
-# Import the core parser from the same directory
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 from parse_gold_report import parse_txt, write_excel_to_buffer
 
-# ─── in-memory store: token → (excel_bytes, download_filename) ───────────────
 _EXCEL_CACHE: dict[str, tuple[bytes, str]] = {}
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024   # 50 MB max upload
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production-use-a-long-random-string")
+
+_USERNAME = os.environ.get("APP_USERNAME", "admin")
+_PASSWORD = os.environ.get("APP_PASSWORD", "titan@123")
 
 
-# ─── Routes ──────────────────────────────────────────────────────────────────
+def login_required(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("logged_in"):
+            if request.method == "POST":
+                return jsonify({"error": "Session expired. Please refresh and log in again."}), 401
+            return redirect(url_for("login", next=request.path))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if username == _USERNAME and password == _PASSWORD:
+            session["logged_in"] = True
+            session["username"]  = username
+            next_url = request.args.get("next") or url_for("index")
+            return redirect(next_url)
+        error = "Invalid username or password."
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
 
 @app.route("/")
+@login_required
 def index():
-    return render_template("index.html")
+    return render_template("index.html", username=session.get("username", ""))
 
 
 @app.route("/upload", methods=["POST"])
+@login_required
 def upload():
     if "file" not in request.files:
         return jsonify({"error": "No file part in request"}), 400
-
     f = request.files["file"]
     if not f.filename:
         return jsonify({"error": "No file selected"}), 400
     if not f.filename.lower().endswith(".txt"):
         return jsonify({"error": "Only .txt report files are supported"}), 400
 
-    # Save to a temp file so parse_txt can read it (it needs a real path)
     suffix = Path(f.filename).suffix
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, mode="wb") as tmp:
         f.save(tmp)
         tmp_path = tmp.name
 
     try:
-        # Parse the report
         df = parse_txt(tmp_path)
-
         if df.empty:
             return jsonify({"error": "No data rows could be parsed from this file"}), 422
 
-        # Fix month label: use the original filename, not the temp path
         import re as _re
         month_label = _re.sub(r"['\s]+", "_", Path(f.filename).stem).upper()
         df["month"] = month_label
 
-        # Generate Excel in memory
         excel_bytes, stats = write_excel_to_buffer(df)
 
-        # Store in cache with a unique token
-        token = str(uuid.uuid4())
-        stem  = Path(f.filename).stem
+        token     = str(uuid.uuid4())
+        stem      = Path(f.filename).stem
         safe_name = f"GoldProcurement_{stem.replace(chr(39), '').replace(' ', '_')}.xlsx"
         _EXCEL_CACHE[token] = (excel_bytes, safe_name)
 
-        # Keep cache small – drop old entries beyond last 10
         if len(_EXCEL_CACHE) > 10:
             oldest = next(iter(_EXCEL_CACHE))
             del _EXCEL_CACHE[oldest]
@@ -105,11 +131,11 @@ def upload():
 
 
 @app.route("/download/<token>")
+@login_required
 def download(token: str):
     if token not in _EXCEL_CACHE:
         abort(404)
     excel_bytes, filename = _EXCEL_CACHE[token]
-
     import io
     return send_file(
         io.BytesIO(excel_bytes),
@@ -119,12 +145,9 @@ def download(token: str):
     )
 
 
-# ─── Entry point ─────────────────────────────────────────────────────────────
-
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    is_local = port == 5000 and os.environ.get("RAILWAY_ENVIRONMENT") is None
+    port     = int(os.environ.get("PORT", 5000))
+    is_local = os.environ.get("RAILWAY_ENVIRONMENT") is None
 
     if is_local:
         import webbrowser, threading
@@ -134,6 +157,6 @@ if __name__ == "__main__":
         threading.Thread(target=_open, daemon=True).start()
 
     print(f"\n  Gold Procurement Web UI")
-    print(f"  ─────────────────────────")
-    print(f"  Running on port {port}\n")
+    print(f"  Running on port {port}")
+    print(f"  Default login: admin / titan@123\n")
     app.run(host="0.0.0.0", port=port, debug=False)

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In – Gold Procurement · Titan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --teal-dark  : #006966;
+      --teal-mid   : #008a86;
+      --teal-main  : #00b2ad;
+      --teal-light : #33c4bf;
+      --teal-pale  : #e0f7f6;
+      --bg         : #ecf7f6;
+      --bg-dark    : #d4eeec;
+      --text-dark  : #0D2B2A;
+      --text-muted : #5a8f8c;
+      --white      : #FFFFFF;
+      --border     : #b2dedd;
+      --shadow     : rgba(0,105,102,.15);
+      --shadow-deep: rgba(0,105,102,.28);
+      --error-bg   : #FEF2F2;
+      --error-bdr  : #FECACA;
+      --error-text : #B91C1C;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Teal shimmer topbar */
+    .topbar {
+      height: 4px;
+      background: linear-gradient(90deg, var(--teal-dark), var(--teal-light), var(--teal-main), var(--teal-dark));
+      background-size: 200% 100%;
+      animation: shimmer 3s linear infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+
+    /* Full-page centering */
+    .page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+
+    /* Brand mark above card */
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .brand-logo {
+      height: 48px;
+      width: auto;
+      /* on the light bg, show in dark teal */
+      filter: brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(500%) hue-rotate(152deg) brightness(90%) contrast(101%);
+    }
+    .brand-divider {
+      width: 48px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--teal-main), transparent);
+    }
+    .brand-tagline {
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+    }
+
+    /* Login card */
+    .card {
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: 0 4px 32px var(--shadow-deep);
+      padding: 40px 40px 36px;
+      width: 100%;
+      max-width: 420px;
+      border: 1px solid var(--bg-dark);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--teal-dark), var(--teal-main), var(--teal-light));
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: var(--teal-dark);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .card-sub {
+      font-size: .82rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    /* Error alert */
+    .error-alert {
+      background: var(--error-bg);
+      border: 1px solid var(--error-bdr);
+      color: var(--error-text);
+      border-radius: 9px;
+      padding: 11px 14px;
+      font-size: .85rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Form */
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: .78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: var(--teal-dark);
+      margin-bottom: 7px;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap .input-icon {
+      position: absolute;
+      left: 13px;
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    .input-wrap input {
+      width: 100%;
+      padding: 13px 14px 13px 40px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: .92rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      background: var(--bg);
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .input-wrap input:focus {
+      border-color: var(--teal-main);
+      box-shadow: 0 0 0 3px rgba(0,178,173,.15);
+      background: var(--white);
+    }
+    /* Toggle password visibility */
+    .toggle-pw {
+      position: absolute;
+      right: 13px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: .9rem;
+      color: var(--text-muted);
+      padding: 4px;
+      border-radius: 4px;
+      transition: color .15s;
+    }
+    .toggle-pw:hover { color: var(--teal-main); }
+
+    /* Submit */
+    .btn-login {
+      width: 100%;
+      padding: 15px;
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--teal-dark), var(--teal-mid), var(--teal-main));
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all .25s;
+      box-shadow: 0 4px 16px var(--shadow-deep);
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px var(--shadow-deep);
+    }
+    .btn-login:active { transform: translateY(0); }
+
+    /* Footer note */
+    .card-footer-note {
+      text-align: center;
+      font-size: .73rem;
+      color: var(--text-muted);
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--bg-dark);
+    }
+
+    /* Page footer */
+    footer {
+      background: var(--teal-dark);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    footer img { height: 18px; filter: brightness(0) invert(1); opacity: .55; }
+    footer span { font-size: .72rem; color: rgba(255,255,255,.4); letter-spacing: .4px; }
+
+    @media (max-width: 480px) {
+      .card { padding: 28px 22px; }
+    }
+  </style>
+</head>
+<body>
+<div class="topbar"></div>
+
+<div class="page">
+
+  <!-- Brand -->
+  <div class="brand">
+    <img class="brand-logo" src="/static/titan_logo.png" alt="Titan Company Ltd" />
+    <div class="brand-divider"></div>
+    <span class="brand-tagline">Gold Procurement · JMO</span>
+  </div>
+
+  <!-- Login card -->
+  <div class="card">
+    <h1 class="card-title">Welcome Back</h1>
+    <p class="card-sub">Sign in to access the procurement portal</p>
+
+    {% if error %}
+    <div class="error-alert">
+      <span>⚠️</span>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="POST">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Enter your username"
+            required
+            autocomplete="username"
+            autofocus
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
+          <button type="button" class="toggle-pw" onclick="togglePw()" title="Show/hide password">👁</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login">Sign In</button>
+    </form>
+
+    <div class="card-footer-note">
+      🔐 &nbsp;Secure internal tool · Titan Company Ltd<br />
+      Contact your administrator to reset credentials.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <img src="/static/titan_logo.png" alt="Titan" />
+  <span>© Titan Company Ltd · Gold Procurement Portal · Internal Use Only</span>
+</footer>
+
+<script>
+  function togglePw() {
+    const pw  = document.getElementById('password');
+    const btn = document.querySelector('.toggle-pw');
+    if (pw.type === 'password') {
+      pw.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      pw.type = 'password';
+      btn.textContent = '👁';
+    }
+  }
+</script>
+</body>
+</html>
