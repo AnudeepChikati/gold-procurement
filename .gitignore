@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+# Don't commit generated Excel output
+*.xlsx
+# Don't commit Oracle report files (upload them via the UI)
+../*.txt
+../FEB*.txt
+../Mar*.txt

@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gold Procurement – Titan Company Ltd</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       TITAN COMPANY LTD – TEAL THEME
+       Primary Teal  : #00b2ad   Dark Teal  : #006966
+       Accent Teal   : #33c4bf   Pale Teal  : #e0f7f6
+       Background    : #ecf7f6   Text Dark  : #0D2B2A
+    ═══════════════════════════════════════════════════════ */
+
+    :root {
+      --teal-dark   : #006966;
+      --teal-mid    : #008a86;
+      --teal-main   : #00b2ad;
+      --teal-light  : #33c4bf;
+      --teal-pale   : #e0f7f6;
+      --teal-glow   : rgba(0,178,173,.22);
+      --bg          : #ecf7f6;
+      --bg-dark     : #d4eeec;
+      --text-dark   : #0D2B2A;
+      --text-mid    : #1e5450;
+      --text-muted  : #5a8f8c;
+      --white       : #FFFFFF;
+      --border      : #b2dedd;
+      --shadow      : rgba(0,105,102,.15);
+      --shadow-deep : rgba(0,105,102,.28);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Topbar (teal shimmer stripe) ─────────────────── */
+    .topbar {
+      height: 4px;
+      background: linear-gradient(90deg, var(--teal-dark), var(--teal-light), var(--teal-main), var(--teal-dark));
+      background-size: 200% 100%;
+      animation: tealShimmer 3s linear infinite;
+    }
+    @keyframes tealShimmer {
+      0%   { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal-mid) 60%, var(--teal-main) 100%);
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 24px var(--shadow-deep);
+      position: relative;
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--teal-light), transparent);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 18px 0;
+    }
+    .titan-logo-wrap {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      padding-right: 24px;
+      border-right: 1px solid rgba(255,255,255,.25);
+    }
+    .titan-logo-wrap img {
+      height: 42px;
+      width: auto;
+      filter: brightness(0) invert(1);
+      object-fit: contain;
+    }
+    .header-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: .3px;
+      line-height: 1.2;
+    }
+    .header-text p {
+      font-size: .75rem;
+      color: rgba(178,255,252,.8);
+      margin-top: 3px;
+      letter-spacing: .4px;
+    }
+    .header-badge {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: var(--white);
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 4px;
+    }
+
+    /* ── Page Subtitle Banner ───────────────────────────── */
+    .page-banner {
+      background: linear-gradient(135deg, var(--teal-mid), var(--teal-dark));
+      border-bottom: 1px solid rgba(0,178,173,.25);
+      padding: 14px 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .page-banner .banner-icon {
+      width: 32px; height: 32px;
+      background: rgba(255,255,255,.2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .page-banner span {
+      font-size: .82rem;
+      color: rgba(255,255,255,.7);
+      letter-spacing: .3px;
+    }
+    .page-banner strong { color: var(--white); }
+
+    /* ── Main ───────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+
+    /* ── Section Label ──────────────────────────────────── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .section-label .sl-dot {
+      width: 10px; height: 10px;
+      background: var(--teal-main);
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px var(--teal-pale);
+    }
+    .section-label span {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+    }
+
+    /* ── Cards ──────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: 0 2px 20px var(--shadow);
+      padding: 36px;
+      margin-bottom: 24px;
+      border: 1px solid var(--bg-dark);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--teal-dark), var(--teal-main), var(--teal-light));
+    }
+    .card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--teal-dark);
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card h2 .icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--teal-dark), var(--teal-main));
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Drop Zone ──────────────────────────────────────── */
+    #drop-zone {
+      border: 2px dashed var(--teal-light);
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--bg) 0%, var(--teal-pale) 100%);
+      padding: 54px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .25s ease;
+      position: relative;
+    }
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: var(--teal-main);
+      background: linear-gradient(135deg, var(--teal-pale) 0%, #c8f0ee 100%);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 24px var(--teal-glow);
+    }
+    #drop-zone .dz-icon {
+      font-size: 3rem;
+      margin-bottom: 14px;
+      display: block;
+      filter: drop-shadow(0 2px 6px var(--teal-glow));
+    }
+    #drop-zone .dz-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--teal-dark);
+      margin-bottom: 8px;
+    }
+    #drop-zone .dz-sub { font-size: .85rem; color: var(--text-muted); }
+    #drop-zone .dz-sub span {
+      color: var(--teal-mid);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: rgba(0,178,173,.3);
+      text-underline-offset: 2px;
+    }
+    #file-input { display: none; }
+
+    /* File badge */
+    #file-badge {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--teal-pale), #c8f0ee);
+      border: 1.5px solid var(--teal-light);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: .88rem;
+      color: var(--teal-dark);
+    }
+    #file-badge .badge-icon { font-size: 1.4rem; }
+    #file-badge .badge-name { font-weight: 600; flex: 1; }
+    #file-badge .badge-size { color: var(--text-muted); font-size: .8rem; }
+    #file-badge .badge-remove {
+      cursor: pointer;
+      color: #c0392b;
+      font-size: .95rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #f5c6cb;
+      transition: background .15s;
+    }
+    #file-badge .badge-remove:hover { background: #fde8e6; }
+
+    /* ── Process Button ─────────────────────────────────── */
+    #process-btn {
+      width: 100%;
+      padding: 17px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal-mid) 50%, var(--teal-main) 100%);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all .25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 18px var(--shadow-deep);
+      position: relative;
+      overflow: hidden;
+    }
+    #process-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--teal-light), #a8f0ee);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    #process-btn:hover:not(:disabled)::after { opacity: 1; }
+    #process-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--shadow-deep);
+    }
+    #process-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── Spinner ─────────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.3);
+      border-top-color: var(--teal-light);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Progress Bar ────────────────────────────────────── */
+    #progress-wrap { display: none; margin-top: 20px; }
+    #progress-label {
+      font-size: .8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #progress-bar-outer {
+      background: var(--bg-dark);
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+    }
+    #progress-bar-inner {
+      background: linear-gradient(90deg, var(--teal-dark), var(--teal-main), var(--teal-light));
+      height: 100%;
+      border-radius: 99px;
+      width: 0%;
+      transition: width .35s ease;
+      background-size: 200% 100%;
+      animation: tealShimmer 1.8s linear infinite;
+    }
+
+    /* ── Error Box ───────────────────────────────────────── */
+    #error-box {
+      background: #FEF2F2;
+      border: 1.5px solid #FECACA;
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #B91C1C;
+      font-size: .88rem;
+      margin-top: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    #error-box.hidden { display: none !important; }
+
+    /* ── Divider ─────────────────────────────────────────── */
+    .gold-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--teal-light), transparent);
+      margin: 28px 0;
+    }
+
+    /* ── Results Panel ───────────────────────────────────── */
+    #results-panel { display: none; animation: fadeUp .4s ease; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, var(--teal-dark), var(--teal-mid));
+      border-radius: 12px;
+      border: 1px solid rgba(0,178,173,.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .result-header::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 160px; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0,178,173,.12));
+      pointer-events: none;
+    }
+    .result-header .check-circle {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--teal-light), #a8f0ee);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px var(--teal-glow);
+    }
+    .result-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .result-header p { font-size: .8rem; color: rgba(178,255,252,.75); margin-top: 3px; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1.5px solid var(--bg-dark);
+      border-radius: 12px;
+      padding: 18px 16px;
+      transition: transform .18s, box-shadow .18s;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--teal-main);
+    }
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px var(--shadow);
+    }
+    .stat-card.gold::before  { background: linear-gradient(90deg, var(--teal-dark), var(--teal-light)); }
+    .stat-card.green::before { background: linear-gradient(90deg, #1E7E45, #27AE60); }
+
+    .stat-card .stat-label {
+      font-size: .68rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 8px;
+    }
+    .stat-card .stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--teal-dark);
+      line-height: 1.2;
+    }
+    .stat-card.gold  .stat-value { color: var(--teal-mid); }
+    .stat-card.green .stat-value { color: #1E7E45; }
+    .stat-card .stat-sub { font-size: .72rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Breakdown */
+    .breakdown {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .breakdown h4 {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .breakdown h4::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--teal-light), transparent);
+    }
+    .breakdown-rows { display: flex; flex-direction: column; gap: 12px; }
+    .breakdown-row  { display: flex; align-items: center; gap: 12px; font-size: .87rem; }
+    .breakdown-row .br-label { width: 165px; font-weight: 500; color: var(--text-dark); flex-shrink: 0; }
+    .breakdown-row .br-bar-outer {
+      flex: 1;
+      background: var(--bg-dark);
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .breakdown-row .br-bar-inner {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--teal-dark), var(--teal-light));
+    }
+    .breakdown-row .br-count { width: 50px; text-align: right; color: var(--text-muted); font-size: .8rem; font-weight: 600; }
+
+    /* Sheet tags */
+    .sheets-info { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    .sheet-tag {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--teal-mid);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: .76rem;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .sheet-tag:hover {
+      background: var(--teal-pale);
+      border-color: var(--teal-main);
+      color: var(--teal-dark);
+    }
+
+    /* Download Button */
+    #download-btn {
+      width: 100%;
+      padding: 17px;
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal-mid) 50%, var(--teal-main) 100%);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 18px var(--teal-glow);
+      transition: all .25s ease;
+      text-decoration: none;
+    }
+    #download-btn:hover {
+      background: linear-gradient(135deg, var(--teal-mid) 0%, var(--teal-light) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--shadow-deep);
+    }
+    #reset-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: .85rem;
+      font-weight: 500;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all .2s;
+      letter-spacing: .3px;
+    }
+    #reset-btn:hover {
+      background: var(--bg);
+      color: var(--teal-dark);
+      border-color: var(--teal-main);
+    }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    footer {
+      background: var(--teal-dark);
+      border-top: 1px solid rgba(0,178,173,.3);
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .footer-left img {
+      height: 22px;
+      filter: brightness(0) invert(1);
+      opacity: .65;
+    }
+    .footer-left span { font-size: .75rem; color: rgba(255,255,255,.5); }
+    .footer-right { font-size: .72rem; color: rgba(178,255,252,.45); letter-spacing: .4px; }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 640px) {
+      header { padding: 0 20px; }
+      .page-banner { padding: 12px 20px; }
+      main { margin: 24px auto; padding: 0 16px; }
+      .card { padding: 24px 20px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .header-badge { display: none; }
+      footer { flex-direction: column; gap: 8px; padding: 16px 20px; }
+    }
+
+    /* ── inline drop-zone hint colour override ──────────── */
+    #drop-zone .dz-sub.hint { color: var(--teal-main) !important; }
+  </style>
+</head>
+<body>
+
+<!-- Gold shimmer topbar -->
+<div class="topbar"></div>
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header>
+  <div class="header-left">
+    <div class="titan-logo-wrap">
+      <img src="/static/titan_logo.png" alt="Titan Company Ltd" />
+    </div>
+    <div class="header-text">
+      <h1>Gold Procurement Portal</h1>
+      <p>Oracle PO Transaction Report · Jewellery Manufacturing Operations</p>
+    </div>
+  </div>
+  <div class="header-badge">JMO · Internal Tool</div>
+</header>
+
+<!-- ── Page Banner ─────────────────────────────────────── -->
+<div class="page-banner">
+  <div class="banner-icon">📊</div>
+  <span><strong>Report Converter</strong> — Upload your monthly Oracle TXT export and download a structured Excel workbook with 8 analysis sheets</span>
+</div>
+
+<!-- ── Main ───────────────────────────────────────────── -->
+<main>
+
+  <!-- Upload Card -->
+  <div class="card" id="upload-card">
+    <h2>
+      <span class="icon">📂</span>
+      Upload Monthly Report
+    </h2>
+
+    <!-- Drop Zone -->
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <span class="dz-icon">🗂️</span>
+      <p class="dz-title">Drag & drop your Oracle TXT report here</p>
+      <p class="dz-sub">or <span>click to browse files</span></p>
+      <p class="dz-sub" style="margin-top:10px;font-size:.76rem;color:var(--teal-mid)">
+        Oracle PO Transaction Report (.txt) &nbsp;·&nbsp; Max 50 MB
+      </p>
+    </div>
+    <input type="file" id="file-input" accept=".txt" />
+
+    <!-- File badge -->
+    <div id="file-badge">
+      <span class="badge-icon">📋</span>
+      <span class="badge-name" id="badge-name"></span>
+      <span class="badge-size" id="badge-size"></span>
+      <span class="badge-remove" onclick="clearFile()" title="Remove file">✕</span>
+    </div>
+
+    <!-- Error Box -->
+    <div id="error-box" class="hidden">
+      <span style="font-size:1.2rem;flex-shrink:0">⚠️</span>
+      <span id="error-msg"></span>
+    </div>
+
+    <!-- Process Button -->
+    <button id="process-btn" onclick="processFile()" disabled>
+      <div class="spinner" id="spinner"></div>
+      <span id="btn-text">Convert to Excel</span>
+    </button>
+
+    <!-- Progress Bar -->
+    <div id="progress-wrap">
+      <p id="progress-label"><span id="progress-step">Uploading…</span></p>
+      <div id="progress-bar-outer">
+        <div id="progress-bar-inner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Card -->
+  <div class="card" id="results-panel">
+
+    <div class="result-header">
+      <div class="check-circle">✓</div>
+      <div>
+        <h3 id="result-title">Report Processed Successfully</h3>
+        <p id="result-subtitle"></p>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section-label">
+      <div class="sl-dot"></div>
+      <span>Summary Statistics</span>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card gold">
+        <div class="stat-label">Purchase Value</div>
+        <div class="stat-value" id="stat-pv">—</div>
+        <div class="stat-sub">Total ₹</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value" id="stat-rows">—</div>
+        <div class="stat-sub">PO receipt lines</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Gold / Metal Qty</div>
+        <div class="stat-value" id="stat-qty">—</div>
+        <div class="stat-sub">Grams (GMS)</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">GST / Tax</div>
+        <div class="stat-value" id="stat-tax">—</div>
+        <div class="stat-sub">Total ₹</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unique Vendors</div>
+        <div class="stat-value" id="stat-vendors">—</div>
+        <div class="stat-sub">Supplier codes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Report Period</div>
+        <div class="stat-value" id="stat-month" style="font-size:1rem">—</div>
+        <div class="stat-sub">Month</div>
+      </div>
+    </div>
+
+    <div class="gold-divider"></div>
+
+    <!-- Breakdown -->
+    <div class="section-label">
+      <div class="sl-dot"></div>
+      <span>Transaction Breakdown by Type</span>
+    </div>
+    <div class="breakdown">
+      <h4>Vendor / Supplier Categories</h4>
+      <div class="breakdown-rows" id="breakdown-rows"></div>
+    </div>
+
+    <!-- Sheets info -->
+    <div class="section-label">
+      <div class="sl-dot"></div>
+      <span>Excel Sheets Included</span>
+    </div>
+    <div class="sheets-info">
+      <span class="sheet-tag">📊 Transactions</span>
+      <span class="sheet-tag">🏢 By Vendor</span>
+      <span class="sheet-tag">⚗️ By Material</span>
+      <span class="sheet-tag">📅 By Date</span>
+      <span class="sheet-tag">💍 Jeweller Exchange</span>
+      <span class="sheet-tag">🏦 Bank Purchases</span>
+      <span class="sheet-tag">🔩 Raw Materials</span>
+      <span class="sheet-tag">⌚ Watch Division</span>
+    </div>
+
+    <!-- Download -->
+    <a id="download-btn" href="#" download>
+      ⬇ &nbsp;Download Excel Report
+    </a>
+    <button id="reset-btn" onclick="resetUI()">↩ &nbsp;Process Another File</button>
+  </div>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer>
+  <div class="footer-left">
+    <img src="/static/titan_logo.png" alt="Titan" />
+    <span>© Titan Company Ltd · All rights reserved</span>
+  </div>
+  <div class="footer-right">JMO GOLD PROCUREMENT · ORACLE ERP INTEGRATION</div>
+</footer>
+
+<!-- ── JavaScript ──────────────────────────────────────── -->
+<script>
+  const dropZone      = document.getElementById('drop-zone');
+  const fileInput     = document.getElementById('file-input');
+  const fileBadge     = document.getElementById('file-badge');
+  const badgeName     = document.getElementById('badge-name');
+  const badgeSize     = document.getElementById('badge-size');
+  const processBtn    = document.getElementById('process-btn');
+  const spinner       = document.getElementById('spinner');
+  const btnText       = document.getElementById('btn-text');
+  const progressWrap  = document.getElementById('progress-wrap');
+  const progressBar   = document.getElementById('progress-bar-inner');
+  const progressStep  = document.getElementById('progress-step');
+  const errorBox      = document.getElementById('error-box');
+  const errorMsg      = document.getElementById('error-msg');
+  const resultsPanel  = document.getElementById('results-panel');
+
+  let selectedFile = null;
+
+  // ── Drag & drop ──────────────────────────────────────────
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) setFile(fileInput.files[0]);
+  });
+
+  function setFile(file) {
+    if (!file.name.toLowerCase().endsWith('.txt')) {
+      showError('Please select a .txt Oracle report file.');
+      return;
+    }
+    hideError();
+    selectedFile = file;
+    badgeName.textContent = file.name;
+    badgeSize.textContent = formatBytes(file.size);
+    fileBadge.style.display = 'flex';
+    processBtn.disabled = false;
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileBadge.style.display = 'none';
+    processBtn.disabled = true;
+    hideError();
+  }
+
+  // ── Process ──────────────────────────────────────────────
+  async function processFile() {
+    if (!selectedFile) return;
+
+    processBtn.disabled = true;
+    spinner.style.display = 'block';
+    btnText.textContent = 'Processing…';
+    progressWrap.style.display = 'block';
+    setProgress(10);
+    progressStep.textContent = 'Uploading file to server…';
+    hideError();
+    resultsPanel.style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      animateProgress(15, 65, 2200);
+      progressStep.textContent = 'Parsing Oracle PO report…';
+
+      const resp = await fetch('/upload', { method: 'POST', body: formData });
+      const data = await resp.json();
+
+      if (!resp.ok) throw new Error(data.error || 'Server error');
+
+      setProgress(85);
+      progressStep.textContent = 'Building Excel workbook…';
+      await sleep(500);
+      setProgress(100);
+      await sleep(350);
+
+      showResults(data);
+
+    } catch (err) {
+      showError(err.message || 'An unexpected error occurred.');
+    } finally {
+      spinner.style.display = 'none';
+      btnText.textContent = 'Convert to Excel';
+      processBtn.disabled = false;
+      progressWrap.style.display = 'none';
+      setProgress(0);
+    }
+  }
+
+  // ── Show Results ─────────────────────────────────────────
+  function showResults(data) {
+    document.getElementById('result-title').textContent    = `${data.month} Report Processed`;
+    document.getElementById('result-subtitle').textContent = data.filename;
+
+    document.getElementById('stat-pv').textContent      = formatINR(data.purchase_value);
+    document.getElementById('stat-rows').textContent    = data.rows.toLocaleString('en-IN');
+    document.getElementById('stat-qty').textContent     = formatQty(data.qty_gms);
+    document.getElementById('stat-tax').textContent     = formatINR(data.tax_amount);
+    document.getElementById('stat-vendors').textContent = data.unique_vendors;
+    document.getElementById('stat-month').textContent   = data.month;
+
+    const container = document.getElementById('breakdown-rows');
+    container.innerHTML = '';
+    const types  = data.vendor_types;
+    const total  = Object.values(types).reduce((a, b) => a + b, 0);
+    const labels = {
+      JEWELLER:     '💍 Jeweller Exchange',
+      BANK:         '🏦 Bank Purchase',
+      RAW_MATERIAL: '🔩 Raw Material',
+      WATCH_DIV:    '⌚ Watch Division',
+      OTHER:        '❓ Other',
+    };
+    Object.entries(types).sort((a,b) => b[1]-a[1]).forEach(([k, v]) => {
+      const pct   = Math.round((v / total) * 100);
+      const label = labels[k] || k;
+      container.innerHTML += `
+        <div class="breakdown-row">
+          <span class="br-label">${label}</span>
+          <div class="br-bar-outer">
+            <div class="br-bar-inner" style="width:${pct}%"></div>
+          </div>
+          <span class="br-count">${v.toLocaleString('en-IN')}</span>
+        </div>`;
+    });
+
+    const dlBtn = document.getElementById('download-btn');
+    dlBtn.href     = `/download/${data.token}`;
+    dlBtn.download = data.filename;
+    dlBtn.innerHTML = `⬇ &nbsp;Download ${data.filename}`;
+
+    resultsPanel.style.display = 'block';
+    resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetUI() {
+    resultsPanel.style.display = 'none';
+    clearFile();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Helpers ──────────────────────────────────────────────
+  function showError(msg) {
+    errorBox.classList.remove('hidden');
+    errorBox.style.display = 'flex';
+    errorMsg.textContent = msg;
+  }
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+  function setProgress(v) { progressBar.style.width = v + '%'; }
+  function animateProgress(from, to, ms) {
+    const steps = 24, inc = (to - from) / steps, delay = ms / steps;
+    let cur = from;
+    const id = setInterval(() => {
+      cur += inc;
+      if (cur >= to) { clearInterval(id); cur = to; }
+      setProgress(cur);
+    }, delay);
+  }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    return (b/1048576).toFixed(1) + ' MB';
+  }
+  function formatINR(n) {
+    if (n >= 1e9)  return '₹' + (n/1e9).toFixed(2)  + ' B';
+    if (n >= 1e7)  return '₹' + (n/1e7).toFixed(2)  + ' Cr';
+    if (n >= 1e5)  return '₹' + (n/1e5).toFixed(2)  + ' L';
+    return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function formatQty(g) {
+    if (g >= 1000) return (g/1000).toFixed(2) + ' Kg';
+    return g.toFixed(3) + ' g';
+  }
+</script>
+</body>
+</html>
