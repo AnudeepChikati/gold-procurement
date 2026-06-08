@@ -42,6 +42,40 @@ _USERNAME = os.environ.get("APP_USERNAME", "admin")
 _PASSWORD = os.environ.get("APP_PASSWORD", "titan@123")
 
 
+# ─── Global JSON error handlers ───────────────────────────────────────────────
+# Flask returns HTML by default for 4xx/5xx — override for API routes
+
+def _json_error(code, message):
+    resp = jsonify({"error": message})
+    resp.status_code = code
+    return resp
+
+@app.errorhandler(400)
+def err_400(e): return _json_error(400, f"Bad request: {e.description}")
+
+@app.errorhandler(401)
+def err_401(e): return _json_error(401, "Session expired. Please refresh and log in again.")
+
+@app.errorhandler(403)
+def err_403(e): return _json_error(403, "Access forbidden.")
+
+@app.errorhandler(404)
+def err_404(e): return _json_error(404, "Not found.")
+
+@app.errorhandler(413)
+def err_413(e): return _json_error(413, "File too large. Maximum size is 50 MB.")
+
+@app.errorhandler(500)
+def err_500(e):
+    traceback.print_exc()
+    return _json_error(500, "Internal server error. Check server logs.")
+
+@app.errorhandler(Exception)
+def err_any(e):
+    traceback.print_exc()
+    return _json_error(500, str(e))
+
+
 def login_required(f):
     @functools.wraps(f)
     def decorated(*args, **kwargs):
