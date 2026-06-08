@@ -1,24 +1,17 @@
 ﻿"""
 Gold Procurement - Web UI (Flask)
 ===================================
-Environment variables (required in production):
-    APP_USERNAME   - login username  (default: admin)
-    APP_PASSWORD   - login password  (default: titan@123)
-    SECRET_KEY     - Flask session secret (generate a long random string)
+Local-only single page app. No authentication.
+Run: python app.py
 """
 
 import os
 import uuid
 import tempfile
 import traceback
-import functools
 from pathlib import Path
 
-from flask import (
-    Flask, request, jsonify, send_file, render_template,
-    abort, session, redirect, url_for
-)
-from werkzeug.middleware.proxy_fix import ProxyFix
+from flask import Flask, request, jsonify, send_file, render_template, abort
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
@@ -26,24 +19,11 @@ from parse_gold_report import parse_txt, write_excel_to_buffer
 
 _EXCEL_CACHE: dict[str, tuple[bytes, str]] = {}
 
-_IS_PRODUCTION = os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER")
-
 app = Flask(__name__)
-# Trust Railway/Render's reverse proxy so HTTPS is detected correctly
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-
-app.config["MAX_CONTENT_LENGTH"]      = 50 * 1024 * 1024
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"]   = bool(_IS_PRODUCTION)  # HTTPS only in prod
-app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production-use-a-long-random-string")
-
-_USERNAME = os.environ.get("APP_USERNAME", "admin")
-_PASSWORD = os.environ.get("APP_PASSWORD", "titan@123")
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 
-# ─── Global JSON error handlers ───────────────────────────────────────────────
-# Flask returns HTML by default for 4xx/5xx — override for API routes
+# ─── JSON error helpers ────────────────────────────────────────────────────────
 
 def _json_error(code, message):
     resp = jsonify({"error": message})
@@ -52,12 +32,6 @@ def _json_error(code, message):
 
 @app.errorhandler(400)
 def err_400(e): return _json_error(400, f"Bad request: {e.description}")
-
-@app.errorhandler(401)
-def err_401(e): return _json_error(401, "Session expired. Please refresh and log in again.")
-
-@app.errorhandler(403)
-def err_403(e): return _json_error(403, "Access forbidden.")
 
 @app.errorhandler(404)
 def err_404(e): return _json_error(404, "Not found.")
@@ -76,46 +50,12 @@ def err_any(e):
     return _json_error(500, str(e))
 
 
-def login_required(f):
-    @functools.wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get("logged_in"):
-            if request.method == "POST":
-                return jsonify({"error": "Session expired. Please refresh and log in again."}), 401
-            return redirect(url_for("login", next=request.path))
-        return f(*args, **kwargs)
-    return decorated
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    error = None
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-        if username == _USERNAME and password == _PASSWORD:
-            session["logged_in"] = True
-            session["username"]  = username
-            next_url = request.args.get("next") or url_for("index")
-            return redirect(next_url)
-        error = "Invalid username or password."
-    return render_template("login.html", error=error)
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-
 @app.route("/")
-@login_required
 def index():
-    return render_template("index.html", username=session.get("username", ""))
+    return render_template("index.html")
 
 
 @app.route("/upload", methods=["POST"])
-@login_required
 def upload():
     if "file" not in request.files:
         return jsonify({"error": "No file part in request"}), 400
@@ -174,7 +114,6 @@ def upload():
 
 
 @app.route("/download/<token>")
-@login_required
 def download(token: str):
     if token not in _EXCEL_CACHE:
         abort(404)
@@ -189,17 +128,14 @@ def download(token: str):
 
 
 if __name__ == "__main__":
-    port     = int(os.environ.get("PORT", 5000))
-    is_local = os.environ.get("RAILWAY_ENVIRONMENT") is None
+    port = int(os.environ.get("PORT", 5000))
 
-    if is_local:
-        import webbrowser, threading
-        def _open():
-            import time; time.sleep(1)
-            webbrowser.open(f"http://localhost:{port}")
-        threading.Thread(target=_open, daemon=True).start()
+    import webbrowser, threading
+    def _open():
+        import time; time.sleep(1)
+        webbrowser.open(f"http://localhost:{port}")
+    threading.Thread(target=_open, daemon=True).start()
 
     print(f"\n  Gold Procurement Web UI")
-    print(f"  Running on port {port}")
-    print(f"  Default login: admin / titan@123\n")
-    app.run(host="0.0.0.0", port=port, debug=False)
+    print(f"  Running at: http://localhost:{port}\n")
+    app.run(host="127.0.0.1", port=port, debug=False)

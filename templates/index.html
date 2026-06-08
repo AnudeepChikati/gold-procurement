@@ -596,35 +596,7 @@
     .footer-left span { font-size: .75rem; color: rgba(255,255,255,.5); }
     .footer-right { font-size: .72rem; color: rgba(178,255,252,.45); letter-spacing: .4px; }
 
-    /* ── User pill + logout ─────────────────────────────────── */
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.22);
-      border-radius: 99px;
-      padding: 7px 14px;
-      font-size: .82rem;
-    }
-    .user-icon { font-size: .9rem; }
-    .user-name { color: var(--white); font-weight: 500; }
-    .logout-btn {
-      color: rgba(178,255,252,.8);
-      font-weight: 600;
-      font-size: .78rem;
-      text-decoration: none;
-      padding: 3px 10px;
-      border-radius: 99px;
-      border: 1px solid rgba(0,178,173,.4);
-      transition: all .2s;
-    }
-    .logout-btn:hover {
-      background: rgba(0,178,173,.25);
-      color: var(--white);
-      border-color: var(--teal-light);
-    }
+
 
     /* ── Responsive ─────────────────────────────────────── */
     @media (max-width: 640px) {
@@ -657,13 +629,7 @@
       <p>Oracle PO Transaction Report · Jewellery Manufacturing Operations</p>
     </div>
   </div>
-<div class="header-right">
-    <div class="user-pill">
-        <span class="user-icon">👤</span>
-        <span class="user-name">{{ username }}</span>
-        <a href="/logout" class="logout-btn" title="Sign out">Sign out</a>
-    </div>
-</div>
+
 </header>
 
 <!-- ── Page Banner ─────────────────────────────────────── -->
