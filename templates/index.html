@@ -889,20 +889,33 @@
       animateProgress(15, 65, 2200);
       progressStep.textContent = 'Parsing Oracle PO report…';
 
-      const resp = await fetch('/upload', { method: 'POST', body: formData });
-
-        // Safe JSON parse — if the server returns HTML (e.g. login redirect),
-        // give a clear message instead of a cryptic JSON parse error
-        const contentType = resp.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) {
-            if (resp.status === 401 || resp.url.includes('/login')) {
-                throw new Error('Your session has expired. Please refresh the page and log in again.');
-            }
-            throw new Error(`Server error (HTTP ${resp.status}). Please refresh the page and try again.`);
+        let resp;
+        try {
+            resp = await fetch('/upload', { method: 'POST', body: formData, cache: 'no-store' });
+        } catch (netErr) {
+            throw new Error('Network error — check your internet connection and try again.');
         }
 
-        const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Server error');
+        // Read raw text first — never call resp.json() directly to avoid parse crashes
+        const rawText = await resp.text();
+
+        // If it looks like HTML the server returned a login page or error page
+        if (rawText.trimStart().startsWith('<')) {
+            if (resp.status === 401 || rawText.includes('/login')) {
+                throw new Error('Session expired — please refresh the page and log in again.');
+            }
+          throw new Error(`Server error (HTTP ${resp.status}) — please refresh the page and try again.`);
+      }
+
+        // Now safe to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch (_) {
+            throw new Error(`Unexpected server response (HTTP ${resp.status}): ${rawText.slice(0, 120)}`);
+        }
+
+        if (!resp.ok) throw new Error(data.error || `Server error (HTTP ${resp.status})`);
 
       setProgress(85);
       progressStep.textContent = 'Building Excel workbook…';
