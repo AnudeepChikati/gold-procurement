@@ -18,6 +18,7 @@ from flask import (
     Flask, request, jsonify, send_file, render_template,
     abort, session, redirect, url_for
 )
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
@@ -25,8 +26,16 @@ from parse_gold_report import parse_txt, write_excel_to_buffer
 
 _EXCEL_CACHE: dict[str, tuple[bytes, str]] = {}
 
+_IS_PRODUCTION = os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER")
+
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+# Trust Railway/Render's reverse proxy so HTTPS is detected correctly
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+app.config["MAX_CONTENT_LENGTH"]      = 50 * 1024 * 1024
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"]   = bool(_IS_PRODUCTION)  # HTTPS only in prod
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production-use-a-long-random-string")
 
 _USERNAME = os.environ.get("APP_USERNAME", "admin")
