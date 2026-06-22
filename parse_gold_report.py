@@ -233,6 +233,18 @@ def parse_txt(filepath: str) -> pd.DataFrame:
     # ── Month label from filename (e.g. "FEB'25" → "FEB-25") ──
     month_label = re.sub(r"['\s]", "-", path.stem).upper()
 
+    # ── Filter: only material codes starting with 11GORY ──
+    raw_records = [r for r in raw_records
+                   if r["material_code"].strip().upper().startswith("11GORY")]
+
+    # ── Filter: exclude WATCH DIVISION from vendor name ──
+    raw_records = [r for r in raw_records
+                   if "WATCH DIVISION" not in r["vendor_name"].strip().upper()]
+
+    # ── Filter: exclude WATCH DIVISION from vendor name ──
+    raw_records = [r for r in raw_records
+                   if "WATCH DIVISION" not in r["vendor_name"].strip().upper()]
+
     # ── Build output records with only the 16 columns ──
     out_records = []
     for r in raw_records:
