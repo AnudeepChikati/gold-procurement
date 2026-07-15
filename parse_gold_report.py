@@ -17,7 +17,7 @@ import glob
 from pathlib import Path
 
 import pandas as pd
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import (
     PatternFill, Font, Alignment, Border, Side,
 )
@@ -53,11 +53,11 @@ NUMERIC_COLS = {
 # ─────────────────────────────────────────────────────────────────────────────
 OUTPUT_HEADERS = [
     "Source Type",
-    "Loan Type",
     "P.O.Number",
     "P.O.Date",
     "Name of the Supplier",
     "Delivery Location",
+    "Loan Type",
     "Qty",
     "Qty - 995",
     "Purity - %",
@@ -72,11 +72,11 @@ OUTPUT_HEADERS = [
 
 OUTPUT_FIELDS = [
     "source_type",
-    "loan_type",
     "po_number",
     "po_date",
     "vendor_name",
     "location",
+    "loan_type",
     "qty",
     "qty_995",
     "purity",
@@ -100,6 +100,14 @@ _RE_SEPARATOR    = re.compile(r'^-{5,}')
 _RE_REPORT_TITLE = re.compile(r'TJD CST PO TRANSACTIONS REPORT', re.IGNORECASE)
 _RE_NON_HDR      = re.compile(r'^\s*(Non|Gold\s+Rec\s+Recover|other)\s*$', re.IGNORECASE)
 _RE_DATA_LINE    = re.compile(r'^\d{7}\s')
+
+# Delivery location mapping  (subinv_code → city)
+_LOCATION_MAP = {
+    "PRRM-ERRM": "KOLKATA",
+    "RM-WSRM":   "MUMBAI",
+    "RM-HSRM":   "HOSUR",
+    "RM-N1RM":   "DELHI",
+}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -241,10 +249,6 @@ def parse_txt(filepath: str) -> pd.DataFrame:
     raw_records = [r for r in raw_records
                    if "WATCH DIVISION" not in r["vendor_name"].strip().upper()]
 
-    # ── Filter: exclude WATCH DIVISION from vendor name ──
-    raw_records = [r for r in raw_records
-                   if "WATCH DIVISION" not in r["vendor_name"].strip().upper()]
-
     # ── Build output records with only the 16 columns ──
     out_records = []
     for r in raw_records:
@@ -256,12 +260,12 @@ def parse_txt(filepath: str) -> pd.DataFrame:
         price_ex = val / qty if qty else 0.0
 
         out_records.append({
-            "source_type":      "",
+            "source_type":      _source_type(r["material_code"]),
             "loan_type":        "",
             "po_number":        r["po_number"],
             "po_date":          r["po_date"],
             "vendor_name":      r["vendor_name"],
-            "location":         r["location"],
+            "location":         _LOCATION_MAP.get(r["location"].strip().upper(), r["location"]),
             "qty":              qty,
             "qty_995":          round(qty_995, 4),
             "purity":           purity,
@@ -401,6 +405,340 @@ def write_excel_to_buffer(df: pd.DataFrame) -> tuple:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Report sheet  — Procurement loan-type categories (team fills Loan Type in Master)
+# ─────────────────────────────────────────────────────────────────────────────
+PROCUREMENT_LOAN_TYPES = [
+    "SBLC", "CLEAN GDS", "CLEAN", "GOL DOM",
+    "EXPORT CLEAN", "EXPORT SBLC", "EXPORT",
+    "GOL", "SPOT CEPA", "SPOT IIBX", "SPOT FWD", "SPOT HUTTI GOLD", "SPOT",
+]
+
+_RPT_TITLE_F = PatternFill("solid", fgColor="1B4F72")
+_RPT_HDR_F   = PatternFill("solid", fgColor="2980B9")
+_RPT_MAN_F   = PatternFill("solid", fgColor="FEF9E7")
+_RPT_ACT_F   = PatternFill("solid", fgColor="EBF5FB")
+_RPT_FRM_F   = PatternFill("solid", fgColor="EAFAF1")
+_RPT_TOT_F   = PatternFill("solid", fgColor="FFF9C4")
+_RPT_ALT_F   = PatternFill("solid", fgColor="F5F5F5")
+_RPT_THICK_B = Border(
+    left=Side(style="medium", color="2980B9"),
+    right=Side(style="medium", color="2980B9"),
+    top=Side(style="medium", color="2980B9"),
+    bottom=Side(style="medium", color="2980B9"),
+)
+
+
+def _write_report_sheet(wb: Workbook, master_df: pd.DataFrame):
+    """
+    Build / replace the 'Report' sheet in the master workbook.
+
+    Sections
+    --------
+    1. Budget vs Actual Qty (KGs) – Budget: manual | Actual: from Qty col
+    2. GOL Interest Rate          – Budget: manual | Actual: from Int col
+    3. Premium Budget vs Actual   – Budget: manual | Actual: from Pre col
+    4. Gold Input Alignment       – alignment %: manual | Qty: from Qty col
+    5. Procurement Details Qty    – grouped by Loan Type (team fills)
+    6. Procurement Details Value  – grouped by Loan Type (team fills)
+    """
+    if "Report" in wb.sheetnames:
+        del wb["Report"]
+    ws = wb.create_sheet("Report")
+
+    months = sorted(master_df["month"].unique().tolist())
+    n      = len(months)
+
+    # ── Aggregate data by month ──────────────────────────────────────────
+    qty_m = (
+        master_df.groupby("month")["qty"].sum()
+        .div(1000).reindex(months, fill_value=0)      # grams → KGs
+    )
+    int_m = (
+        master_df.assign(
+            int_val=pd.to_numeric(master_df["int_val"], errors="coerce").fillna(0)
+        ).groupby("month")["int_val"].sum().reindex(months, fill_value=0)
+    )
+    pre_m = (
+        master_df.assign(
+            pre_val=pd.to_numeric(master_df["pre_val"], errors="coerce").fillna(0)
+        ).groupby("month")["pre_val"].sum().reindex(months, fill_value=0)
+    )
+    val_m = (
+        master_df.groupby("month")["total_val_ex_gst"].sum()
+        .reindex(months, fill_value=0)
+    )
+
+    # Procurement pivots (loan_type × month) — uppercase for case-insensitive match
+    lt_df = master_df.copy()
+    lt_df["loan_type"] = lt_df["loan_type"].fillna("").str.strip().str.upper()
+    qty_lt = (
+        lt_df.groupby(["loan_type", "month"])["qty"].sum()
+        .unstack(fill_value=0).div(1000)
+        .reindex(columns=months, fill_value=0)
+    )
+    val_lt = (
+        lt_df.groupby(["loan_type", "month"])["total_val_ex_gst"].sum()
+        .unstack(fill_value=0).reindex(columns=months, fill_value=0)
+    )
+
+    grand_qty = float(qty_m.sum())
+    grand_val = float(val_m.sum())
+
+    # ── Style / alignment helpers ──────────────────────────────────────────
+    _TB  = Border(
+        left=Side(style="thin", color="BDBDBD"),
+        right=Side(style="thin", color="BDBDBD"),
+        top=Side(style="thin", color="BDBDBD"),
+        bottom=Side(style="thin", color="BDBDBD"),
+    )
+    _CTR = Alignment(horizontal="center", vertical="center")
+    _LFT = Alignment(horizontal="left",   vertical="center", indent=1)
+    _LF0 = Alignment(horizontal="left",   vertical="center")
+    _RGT = Alignment(horizontal="right",  vertical="center")
+
+    cur = [1]      # mutable row pointer
+    def R():    return cur[0]
+    def adv():  cur[0] += 1
+
+    def W(r, c, v=None, fill=None, font=None, align=None, fmt=None, bdr=None):
+        cell = ws.cell(row=r, column=c, value=v)
+        if fill:  cell.fill          = fill
+        if font:  cell.font          = font
+        if align: cell.alignment     = align
+        if fmt:   cell.number_format = fmt
+        cell.border = bdr if bdr else _TB
+        return cell
+
+    # ── Section title (full-width merged) ───────────────────────────────
+    def sec(text, ncols):
+        r = R()
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=ncols)
+        W(r, 1, text,
+          fill=_RPT_TITLE_F,
+          font=Font(bold=True, color="FFFFFF", size=11),
+          align=_CTR, bdr=_RPT_THICK_B)
+        ws.row_dimensions[r].height = 24
+        adv()
+
+    # ── Column header row ─────────────────────────────────────────────
+    def hdr(first, share=False):
+        r = R()
+        cols = [first] + months + ["Total"] + (["% Share"] if share else [])
+        for ci, h in enumerate(cols, 1):
+            W(r, ci, h,
+              fill=_RPT_HDR_F,
+              font=Font(bold=True, color="FFFFFF", size=10),
+              align=_CTR if ci > 1 else _LF0,
+              bdr=_RPT_THICK_B)
+        ws.row_dimensions[r].height = 18
+        adv()
+
+    # ── Manual (blank) row — team fills ─────────────────────────────────
+    def man(label, fmt="#,##0.000"):
+        r = R()
+        W(r, 1, label,
+          fill=_RPT_MAN_F,
+          font=Font(size=10, italic=True, color="808080"),
+          align=_LFT)
+        for ci in range(2, n + 3):
+            W(r, ci, None, fill=_RPT_MAN_F, fmt=fmt)
+        adv()
+        return r
+
+    # ── Actual (auto-populated) row ─────────────────────────────────
+    def act(label, vals, fmt="#,##0.000"):
+        r = R()
+        total = sum(float(v) for v in vals)
+        W(r, 1, label, fill=_RPT_ACT_F,
+          font=Font(size=10, bold=True), align=_LFT)
+        for ci, v in enumerate(vals, 2):
+            W(r, ci, round(float(v), 6), fill=_RPT_ACT_F,
+              font=Font(size=10), align=_RGT, fmt=fmt)
+        W(r, n + 2, round(total, 6), fill=_RPT_ACT_F,
+          font=Font(size=10, bold=True), align=_RGT, fmt=fmt)
+        adv()
+        return r
+
+    # ── Formula row ──────────────────────────────────────────────────
+    def fml(label, bgt_r, act_r, kind="diff", fmt="#,##0.000"):
+        """kind: 'pct' = (actual/budget)*100  |  'diff' = actual-budget"""
+        r = R()
+        W(r, 1, label, fill=_RPT_FRM_F,
+          font=Font(size=10, italic=True), align=_LFT)
+        for ci in range(2, n + 3):          # month cols + Total
+            col = get_column_letter(ci)
+            if kind == "pct":
+                formula = f'=IFERROR({col}{act_r}/{col}{bgt_r}*100,"")'
+                num     = "0.00"
+            else:
+                formula = f"={col}{act_r}-{col}{bgt_r}"
+                num     = fmt
+            W(r, ci, formula, fill=_RPT_FRM_F,
+              font=Font(size=10), align=_RGT, fmt=num)
+        adv()
+
+    # ── Procurement data row ──────────────────────────────────────────
+    def prc(label, vals, fmt="#,##0.000",
+            is_total=False, alt=False, grand=None):
+        r = R()
+        total = sum(float(v) for v in vals)
+        fill  = _RPT_TOT_F if is_total else (_RPT_ALT_F if alt else None)
+        font  = Font(bold=True, size=10) if is_total else Font(size=10)
+        W(r, 1, label, fill=fill, font=font,
+          align=_LF0 if is_total else _LFT)
+        for ci, v in enumerate(vals, 2):
+            W(r, ci, round(float(v), 4), fill=fill, font=font,
+              align=_RGT, fmt=fmt)
+        W(r, n + 2, round(total, 4), fill=fill, font=font,
+          align=_RGT, fmt=fmt)
+        if grand is not None:
+            pct = (100.0 if is_total
+                   else (round(total / grand * 100, 2) if grand else 0))
+            W(r, n + 3, pct, fill=fill, font=font, align=_RGT, fmt="0.00")
+        adv()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # SECTION 1 — Budget vs Actual (Qty, KGs)
+    # ══════════════════════════════════════════════════════════════════════
+    sec("Gold Procurement: Budget Vs Actual  [Qty in KGs]", n + 2)
+    hdr("Description")
+    bgt1 = man("Budgeted Qty in KGs")
+    act1 = act("Actual Qty in KGs", qty_m.tolist())
+    fml("Achievement %",                      bgt1, act1, kind="pct")
+    fml("Decrease / Increase w.r.t Budget",   bgt1, act1, kind="diff")
+    adv()   # blank separator
+
+    # ══════════════════════════════════════════════════════════════════════
+    # SECTION 2 — GOL Interest Rate
+    # ══════════════════════════════════════════════════════════════════════
+    sec("GOL - Interest Rate (including Export)", n + 2)
+    hdr("Details")
+    bgt2 = man("Budget", fmt="0.0000")
+    act2 = act("Actual",  int_m.tolist(), fmt="0.0000")
+    fml("Variation", bgt2, act2, kind="diff", fmt="0.0000")
+    adv()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # SECTION 3 — Premium Budget vs Actual
+    # ══════════════════════════════════════════════════════════════════════
+    sec("Premium: Budget Vs Actual  [$ / T.oz]", n + 2)
+    hdr("Details")
+    bgt3 = man("Budgeted Premium - $ / T.oz", fmt="0.0000")
+    act3 = act("Actual Premium - $ / T.oz",   pre_m.tolist(), fmt="0.0000")
+    fml("Variation - $ / T.oz", bgt3, act3, kind="diff", fmt="0.0000")
+    adv()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # SECTION 4 — Gold Input Alignment
+    # ══════════════════════════════════════════════════════════════════════
+    sec("Gold Input Alignment - including Export (mixed purity)", n + 2)
+    hdr("Details")
+    man("Gold delivery alignment in %", fmt="0.00%")
+    act("Quantity purchased in KGs",    qty_m.tolist())
+    adv()
+    adv()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # SECTION 5 — Procurement Details (Qty, KGs)
+    # ══════════════════════════════════════════════════════════════════════
+    sec("Procurement Details (mixed purity)  [Qty in KGs]", n + 3)
+    hdr("Details", share=True)
+    for idx, lt in enumerate(PROCUREMENT_LOAN_TYPES):
+        key  = lt.upper()
+        vals = qty_lt.loc[key].tolist() if key in qty_lt.index else [0.0] * n
+        prc(lt, vals, alt=(idx % 2 == 1), grand=grand_qty)
+    prc("Total Qty - KGs", qty_m.tolist(), is_total=True, grand=grand_qty)
+    adv()
+
+    # ══════════════════════════════════════════════════════════════════════
+    # SECTION 6 — Procurement Details (Value, ₹)
+    # ══════════════════════════════════════════════════════════════════════
+    sec("Procurement Details - Value  [\u20b9 Ex GST]", n + 3)
+    hdr("Details", share=True)
+    for idx, lt in enumerate(PROCUREMENT_LOAN_TYPES):
+        key  = lt.upper()
+        vals = val_lt.loc[key].tolist() if key in val_lt.index else [0.0] * n
+        prc(lt, vals, fmt="#,##0.00", alt=(idx % 2 == 1), grand=grand_val)
+    prc("Total Value - \u20b9", val_m.tolist(),
+        fmt="#,##0.00", is_total=True, grand=grand_val)
+
+    # ── Column widths ───────────────────────────────────────────────────────
+    ws.column_dimensions["A"].width = 45
+    for ci in range(2, n + 4):
+        ws.column_dimensions[get_column_letter(ci)].width = 16
+    ws.freeze_panes = "A2"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Master Excel  — accumulates all months in a single workbook
+# ─────────────────────────────────────────────────────────────────────────────
+MASTER_FILENAME = "GoldProcurement_Master.xlsx"
+
+
+def _get_master_path(out_dir: str | Path) -> Path:
+    """Return the path to the master Excel in the given directory."""
+    return Path(out_dir) / MASTER_FILENAME
+
+
+def update_master_excel(df: pd.DataFrame, out_dir: str | Path):
+    """
+    Append the current month's data to the master Excel.
+    - If the master doesn't exist, create it.
+    - If the month already exists in the master, replace that month's data.
+    - The master has one sheet with ALL months combined.
+    """
+    master_path = _get_master_path(out_dir)
+
+    # Determine month label from the dataframe
+    if df.empty:
+        return
+    current_month = df["month"].iloc[0]
+
+    # Load existing master data (if any)
+    if master_path.exists():
+        existing_df = pd.read_excel(master_path, sheet_name="Master",
+                                    dtype=str, header=0)
+        # Map Excel headers back to internal field names
+        header_to_field = dict(zip(OUTPUT_HEADERS, OUTPUT_FIELDS))
+        existing_df.columns = [header_to_field.get(c, c) for c in existing_df.columns]
+
+        # Drop the TOTAL summary row that _write_sheet appends
+        existing_df = existing_df[
+            existing_df[existing_df.columns[0]].astype(str).str.upper() != "TOTAL"
+        ]
+
+        # Convert numeric columns back; string cols: NaN → ""
+        for col in ("qty", "qty_995", "purity", "total_val_ex_gst", "price_ex_gst",
+                    "int_val", "pre_val", "duty_val"):
+            if col in existing_df.columns:
+                existing_df[col] = pd.to_numeric(existing_df[col], errors="coerce").fillna(0.0)
+        for col in ("source_type", "loan_type"):
+            if col in existing_df.columns:
+                existing_df[col] = existing_df[col].fillna("")
+
+        # If this month already exists in the master, skip — do not overwrite
+        if current_month in existing_df["month"].values:
+            print(f"  ⏭ Master already has {current_month} — skipping (no overwrite)")
+            return
+
+        # Append new month's data
+        master_df = pd.concat([existing_df, df], ignore_index=True)
+    else:
+        master_df = df.copy()
+
+    # Sort by month for consistent ordering
+    master_df = master_df.reset_index(drop=True)
+
+    # Write master workbook (Master data sheet + Report summary sheet)
+    wb = Workbook()
+    del wb[wb.sheetnames[0]]
+    _write_sheet(wb, master_df, sheet_name="Master")
+    _write_report_sheet(wb, master_df)
+    wb.save(str(master_path))
+    print(f"  ✓ Master updated: {master_path}  ({len(master_df)} total rows, Report refreshed)")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ─────────────────────────────────────────────────────────────────────────────
 def _infer_month_tag(filepath: str) -> str:
@@ -420,6 +758,9 @@ def process_file(filepath: str):
     out_dir  = Path(filepath).parent
     out_path = str(out_dir / f"GoldProcurement_{tag}.xlsx")
     write_excel(df, out_path)
+
+    # Update master Excel with this month's data
+    update_master_excel(df, out_dir)
 
 
 def main():
